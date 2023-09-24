@@ -1,6 +1,6 @@
 // Copyright © 2012-2023 Vaughn Vernon. All rights reserved.
 
-import { Expectations } from "../../../matching/model/expectations";
+import { Expectations } from "../../../matching/model/proposal/expectations";
 import { Client } from '../../../matching/model/client';
 import { Doer } from '../../../matching/model/doer';
 import { Id } from '../../../matching/model/id';
