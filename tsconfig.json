@@ -1,0 +1,9 @@
+{
+  "compilerOptions": {
+    "esModuleInterop": true,
+
+    "verbatimModuleSyntax": false,
+
+    "lib": ["es2020"]
+  }
+}
