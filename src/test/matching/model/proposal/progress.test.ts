@@ -1,6 +1,6 @@
 // Copyright © 2012-2023 Vaughn Vernon. All rights reserved.
 
-import { Progress } from '../../../../matching/model/proposal/progress';
+import { Progress } from '../../../../matching/model/proposal/Progress';
 
 describe('Progress class', () => {
     test('Progress::submitted', () => {

@@ -15,9 +15,9 @@ describe('Expectations class', () => {
         expect(expectations.summary.length).not.toBe(0);
         expect(expectations.description).not.toBeNull();
         expect(expectations.description.length).not.toBeLessThan(expectations.summary.length);
-        expect(expectations.keywords.size).toBe(6);
-        expect(expectations.keywords.has('window')).toBeTruthy();
-        expect(expectations.keywords.has('washing')).toBeTruthy();
+        expect(expectations.keywords.size()).toBe(6);
+        expect(expectations.keywords.contains('window')).toBeTruthy();
+        expect(expectations.keywords.contains('washing')).toBeTruthy();
         expect(expectations.completedBy).toEqual(tomorrow);
         expect(expectations.price).toEqual(price);
         expect(expectations.hasSuggestedCompletedBy()).toBeFalsy();

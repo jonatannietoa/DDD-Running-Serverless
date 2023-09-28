@@ -4,6 +4,22 @@
 
     "verbatimModuleSyntax": false,
 
-    "lib": ["es2020"]
+    "lib": ["es2020"],
+
+    "sourceMap": true,
+
+    "baseUrl": ".",
+
+    "paths": {
+      "$common": [
+        "src/common"
+      ],
+      "$matching": [
+        "src/matching"
+      ],
+      "$pricing/*": [
+        "src/pricing"
+      ],
+    }
   }
 }

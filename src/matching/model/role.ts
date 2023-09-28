@@ -1,17 +1,23 @@
 // Copyright © 2012-2023 Vaughn Vernon. All rights reserved.
 
-export abstract class Role {
-    public readonly id: Id;
+import { Id } from "./Id";
 
-    public isUnidentified(): boolean {
+export abstract class Role {
+    private readonly _id: Id;
+
+    isUnidentified(): boolean {
         return this.id === null;
     }
 
-    public equals(other: Object): boolean {
+    equals(other: Object): boolean {
         return this === other;
     }
 
-    constructor(id?: Id) {
-        this.id = id;
+    get id() {
+        return this._id;
+    }
+
+    constructor(id: Id) {
+        this._id = id;
     }
 }

@@ -1,31 +1,37 @@
 // Copyright © 2012-2023 Vaughn Vernon. All rights reserved.
 
+import { Set as OSet } from "typescript-collections";
+
 export class Progress {
-    private readonly steps: Set<Step>;
+    private readonly steps: OSet<Step>;
+
+    static none(): Progress {
+        return new Progress(Step.None);
+    }
 
     static submitted(): Progress {
         return new Progress(Step.Submitted);
     }
 
     isSubmitted(): boolean {
-        return this.steps.has(Step.Submitted);
+        return this.steps.contains(Step.Submitted);
     }
 
     isAcceptable(): boolean {
-        return this.steps.has(Step.Submitted) &&
-               this.steps.has(Step.PricingAccepted) &&
-               this.steps.has(Step.PooledDoers) &&
-               this.steps.has(Step.MergedDoers);
+        return this.steps.contains(Step.Submitted) &&
+               this.steps.contains(Step.PricingAccepted) &&
+               this.steps.contains(Step.PooledDoers) &&
+               this.steps.contains(Step.MergedDoers);
     }
 
     isMatchable(): boolean {
         return this.isAcceptable() &&
-               this.steps.has(Step.MatchPending);
+               this.steps.contains(Step.MatchPending);
     }
 
     isMatched(): boolean {
         return this.isMatchable() &&
-               this.steps.has(Step.Matched);
+               this.steps.contains(Step.Matched);
     }
 
     isUnmatched(): boolean {
@@ -33,23 +39,25 @@ export class Progress {
     }
 
     hasPooledDoers(): boolean {
-        return this.steps.has(Step.PooledDoers);
+        //console.log("STEPS: " + this.steps.toString() + " POOLED: " + this.steps.contains(Step.PooledDoers));
+        return this.steps.contains(Step.PooledDoers);
     }
 
     hasMergedDoers(): boolean {
-        return this.steps.has(Step.MergedDoers);
+        //console.log("STEPS: " + this.steps.toString() + " MERGED: " + this.steps.contains(Step.MergedDoers));
+        return this.steps.contains(Step.MergedDoers);
     }
 
     hasDoersUnavailable(): boolean {
-        return this.steps.has(Step.DoersUnavailable);
+        return this.steps.contains(Step.DoersUnavailable);
     }
 
     hasPricingAccepted(): boolean {
-        return this.steps.has(Step.PricingAccepted);
+        return this.steps.contains(Step.PricingAccepted);
     }
 
     hasPricingRejected(): boolean {
-        return this.steps.has(Step.PricingRejected);
+        return this.steps.contains(Step.PricingRejected);
     }
 
     withPricingAccepted(): Progress {
@@ -69,7 +77,7 @@ export class Progress {
     }
 
     withDoersUnavailable(): Progress {
-        return new Progress(Step.DoersUnavailable, this.withoutStep(Step.DoersPooled));
+        return new Progress(Step.DoersUnavailable, this.withoutStep(Step.PooledDoers));
     }
 
     withMatchPending(): Progress {
@@ -80,14 +88,29 @@ export class Progress {
         return new Progress(Step.Matched, this.steps);
     }
 
-    private constructor(step: Step, steps?: Set<Step>) {
-        this.steps = steps ? new Set<Step>(steps) : new Set<Step>();
-        this.steps.add(step);
+    toString(): string {
+        let values = "";
+
+        this.steps.forEach(step => {
+            values = values + step.toString() + ","
+        });
+
+        return "Progress [" + values + "]";
     }
 
-    private withoutStep(step: Step): Set<Step> {
-        if (this.steps.has(step)) {
-            let without = new Set<Step>();
+    private constructor(step: Step, steps?: OSet<Step>) {
+        this.steps = new OSet<Step>();
+        if (steps) {
+            this.steps.union(steps);
+        }
+        if (step !== Step.None) {
+            this.steps.add(step);
+        }
+    }
+
+    private withoutStep(step: Step): OSet<Step> {
+        if (this.steps.contains(step)) {
+            let without = new OSet<Step>();
             this.steps.forEach(stepElement => {
                 if (step !== stepElement) {
                     without.add(stepElement);
@@ -98,15 +121,20 @@ export class Progress {
 
         return this.steps;
     }
+
+    get __forTestingSteps() {
+        return this.steps;
+    }
 }
 
 enum Step {
+    None = 0,
     Submitted = 1,
-    PricingAccepted,
-    PricingRejected,
-    PooledDoers,
-    MergedDoers,
-    DoersUnavailable,
-    MatchPending,
-    Matched,
+    PricingAccepted = 2,
+    PricingRejected = 3,
+    PooledDoers = 4,
+    MergedDoers = 5,
+    DoersUnavailable = 6,
+    MatchPending = 7,
+    Matched = 8,
 }

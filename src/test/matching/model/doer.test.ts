@@ -1,7 +1,7 @@
 // Copyright © 2012-2023 Vaughn Vernon. All rights reserved.
 
-import { Doer } from '../../../matching/model/doer';
-import { Id } from '../../../matching/model/id';
+import { Doer } from '../../../matching/model/Doer';
+import { Id } from '../../../matching/model/Id';
 
 describe('Doer class', () => {
     test('Doer::from', () => {

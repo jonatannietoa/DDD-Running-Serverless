@@ -1,7 +1,7 @@
 // Copyright © 2012-2023 Vaughn Vernon. All rights reserved.
 
-import { Client } from '../../../matching/model/client';
-import { Id } from '../../../matching/model/id';
+import { Client } from '../../../matching/model/Client';
+import { Id } from '../../../matching/model/Id';
 
 describe('Client class', () => {
     test('Client::from', () => {

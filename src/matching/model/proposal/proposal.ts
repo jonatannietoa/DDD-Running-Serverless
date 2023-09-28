@@ -1,143 +1,185 @@
 // Copyright © 2012-2023 Vaughn Vernon. All rights reserved.
 
-import { Client } from '../client';
-import { Doer } from '../doer';
-import { Expectations } from './expectations';
-import { Id } from '../id';
-import { Progress } from './progress';
+import { Client } from '../Client';
+import { Doer } from '../Doer';
+import { DomainEvent } from '../../../common/DomainEvent';
+import { EventSourcedEntity } from '../../../common/EventSourcedEntity';
+import { Expectations } from './Expectations';
+import { Id } from '../Id';
+import { Set as OSet } from "typescript-collections";
+import { Progress } from './Progress';
+import { ProposalState } from './ProposalState';
+import { ProposalSubmitted,
+         PricingAccepted,
+         PricingRejected,
+         DoersPooled,
+         DoersMerged
+        } from './events';
 
-export class Proposal {
-    private proposalState: ProposalState;
+export class Proposal extends EventSourcedEntity {
+    private _proposalState: ProposalState;
 
     static submitFor(client: Client, expectations: Expectations): Proposal {
-        return new Proposal(client, expectations);
+        return new Proposal(client, expectations, null);
     }
 
-    public acceptedPricing(): void {
-        if (!this.progress().hasPricingAccepted()) {
-            this.proposalState =
-                new ProposalState(
-                    this.id(),
-                    this.client(),
-                    this.expectations(),
-                    this.proposalState.candidateDoers,
-                    this.proposalState.matchedDoer,
-                    this.progress().withPricingAccepted()
-                );
+    acceptPricing(): void {
+        if (!this.progress.hasPricingAccepted()) {
+            this.apply(PricingAccepted.with(this.id));
         }
     }
 
-    public rejectPricing(suggestedPricing: bigint): void {
-        if (!this.progress().hasPricingRejected()) {
-            this.proposalState =
-                new ProposalState(
-                    this.id(),
-                    this.client(),
-                    this.expectations().withSuggestedPrice(suggestedPricing),
-                    this.candidateDoers(),
-                    this.matchedDoer(),
-                    this.progress().withPricingRejected()
-                );
+    rejectPricing(suggestedPricing: number): void {
+        if (!this.progress.hasPricingRejected()) {
+            this.apply(PricingRejected.with(this.id, suggestedPricing));
         }
     }
 
-    public poolDoers(doers: Set<Doer>) {
-        if (!this.state().progress.hasPooledDoers()) {
-            this.proposalState =
-                new ProposalState(
-                    Id.unique(),
-                    this.client(),
-                    this.expectations(),
-                    doers,
-                    this.matchedDoer(),
-                    this.progress().withPooledDoers());
+    poolDoers(doers: OSet<Doer>): void {
+        if (!this.progress.hasPooledDoers()) {
+            this.apply(DoersPooled.with(this.id, doers));
         }
     }
 
-    public mergeDoers(doers: Set<Doer>): void {
-        if (!this.progress().hasMergedDoers()) {
-            this.proposalState =
-                new ProposalState(
-                    this.id(),
-                    this.client(),
-                    this.expectations(),
-                    this.state().mergeDoers(doers),
-                    this.matchedDoer(),
-                    this.progress().withMergedDoers().withMatchPending());
+    mergeDoers(doers: OSet<Doer>): void {
+        if (!this.progress.hasMergedDoers()) {
+            // a merge must not result in more doers
+            const currentCandidates = this.candidateDoers;
+            const beforeMergedSize = currentCandidates.size();
+            if (this.state.mergeDoers(currentCandidates).size() > beforeMergedSize) {
+                throw new Error("Merge cannot result in more doers than current pooled candidates of " + beforeMergedSize + ".");
+            }
+            this.apply(DoersMerged.with(this.id, doers));
         }
     }
 
-    public candidateDoers(): Set<Doer> {
-        return new Set<Doer>(this.state().candidateDoers);
+    get candidateDoers(): OSet<Doer> {
+        const candidates = new OSet<Doer>();
+        candidates.union(this.state.candidateDoers);
+        return candidates;
     }
 
-    public client(): Client {
-        return this.state().client;
+    get client(): Client {
+        return this.state.client;
     }
 
-    public expectations(): Expectations {
-        return this.state().expectations;
+    get expectations(): Expectations {
+        return this.state.expectations;
     }
 
-    public id(): Id {
-        return this.state().id;
+    get id(): Id {
+        return this.state.id;
     }
 
-    public matchedDoer(): Doer {
-        return this.state().matchedDoer;
+    get matchedDoer(): Doer {
+        return this.state.matchedDoer;
     }
 
-    public progress(): Progress {
-        return this.state().progress;
+    get progress(): Progress {
+        return this.state.progress;
     }
 
-    public state(): ProposalState {
-        return this.proposalState;
+    get state() {
+        return this._proposalState;
     }
 
-    private constructor(client: Client, expectations: Expectations) {
-        this.proposalState =
+    private set state(value: ProposalState) {
+        this._proposalState = value;
+    }
+
+    protected when(e: DomainEvent): void {
+        switch (e.type) {
+            case ProposalSubmitted.Type:
+                this.whenProposalSubmitted(e as ProposalSubmitted);
+                break;
+            case PricingAccepted.Type:
+                this.whenPricingAccepted(e as PricingAccepted);
+                break;
+            case PricingRejected.Type:
+                this.whenPricingRejected(e as PricingRejected);
+                break;
+            case DoersPooled.Type:
+                this.whenDoersPooled(e as DoersPooled);
+                break;
+            case DoersMerged.Type:
+                this.whenDoersMerged(e as DoersMerged);
+                break;
+            default:
+                throw new Error("Unknow event type");
+        }
+    }
+
+    // INTERNAL USE ONLY
+    static restoreStateWith(stream: Array<DomainEvent>): Proposal {
+        return new Proposal(null, null, stream);
+    }
+
+    private constructor(client?: Client, expectations?: Expectations, stream?: Array<DomainEvent>) {
+        super(stream);
+
+        if (!stream) {
+            this._proposalState = ProposalState.empty();
+        
+            if (client && expectations) {
+                this.apply(ProposalSubmitted.with(Id.unique(), client, expectations));
+            }
+        }
+    }
+
+    private whenProposalSubmitted(e: ProposalSubmitted): void {
+        this.state =
             new ProposalState(
-                Id.unique(),
-                client,
-                expectations,
-                new Set<Doer>(),
+                e.proposalId,
+                e.client,
+                e.expectations,
+                new OSet<Doer>(),
                 null,
                 Progress.submitted());
     }
-}
 
-export class ProposalState {
-    public readonly id: Id;
-    public readonly client: Client;
-    public readonly expectations: Expectations;
-    public readonly candidateDoers: Set<Doer>;
-    public readonly matchedDoer: Doer;
-    public readonly progress: Progress;
-
-    constructor(
-        id: Id,
-         client: Client,
-          expectations: Expectations,
-          candidateDoers: Set<Doer>,
-          matchedDoer: Doer,
-          progress: Progress) {
-
-        this.id = id;
-        this.client = client;
-        this.expectations = expectations;
-        this.candidateDoers = candidateDoers;
-        this.matchedDoer = matchedDoer;
-        this.progress = progress;
+    private whenPricingAccepted(e: PricingAccepted): void {
+        this.state =
+            new ProposalState(
+                this.id,
+                this.client,
+                this.expectations,
+                this.state.candidateDoers,
+                this.state.matchedDoer,
+                this.progress.withPricingAccepted()
+            );
     }
 
-    mergeDoers(doers: Set<Doer>): Set<Doer> {
-        const merged = new Set<Doer>();
-        this.candidateDoers.forEach(candidate => {
-            if (doers.has(candidate)) {
-                merged.add(candidate);
-            }
-        });
-        return merged;
+    private whenPricingRejected(e: PricingRejected): void {
+        this.state =
+            new ProposalState(
+                this.id,
+                this.client,
+                this.expectations.withSuggestedPrice(e.suggestedPricing),
+                this.candidateDoers,
+                this.matchedDoer,
+                this.progress.withPricingRejected()
+            );
+    }
+
+    private whenDoersPooled(e: DoersPooled) {
+        this.state =
+            new ProposalState(
+                Id.unique(),
+                this.client,
+                this.expectations,
+                e.doers,
+                this.matchedDoer,
+                this.progress.withPooledDoers());
+    }
+
+    private whenDoersMerged(e: DoersMerged): void {
+        this.state =
+            new ProposalState(
+                this.id,
+                this.client,
+                this.expectations,
+                this.state.mergeDoers(e.doers),
+                this.matchedDoer,
+                this.progress.withMergedDoers().withMatchPending());
     }
 }
