@@ -27,6 +27,7 @@ export const keywords = ['home', 'maintenance', 'window', 'washing', 'count=35',
 export const steps = ['Step1', 'Step2', 'Step3'];
 export const price = 25000;
 export const higherPrice = 30000;
+export const fairPrice = higherPrice;
 export const expectationsKeywords = new OSet<string>();
 keywords.forEach(keyword => expectationsKeywords.add(keyword));
 export const expectationsSteps = new OSet<string>();
