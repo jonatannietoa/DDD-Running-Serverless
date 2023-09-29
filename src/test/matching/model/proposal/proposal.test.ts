@@ -1,8 +1,10 @@
 // Copyright © 2012-2023 Vaughn Vernon. All rights reserved.
 
 import {
+    DoersMerged,
     DoersPooled,
     PricingAccepted,
+    PricingRejected,
     ProposalSubmitted
 } from '../../../../matching/model/proposal/Events';
 
@@ -15,6 +17,7 @@ import {
     recommendedDoers,
     availableDoers,
     higherPrice,
+    fairPrice,
     uniqueId,
 } from '../fixures';
 
@@ -24,6 +27,8 @@ describe('Proposal class', () => {
 
         expect(proposal).not.toBeNull();
         expect(proposal.progress.isSubmitted()).toBeTruthy();
+        expect(proposal.applied.length).toBe(1);
+        expect(proposal.applied[0].type).toBe(ProposalSubmitted.Type);
     });
 
     test('Proposal::acceptedPricing', () => {
@@ -35,6 +40,8 @@ describe('Proposal class', () => {
 
         expect(proposal.progress.hasPricingAccepted()).toBeTruthy();
         expect(proposal.progress.hasPricingRejected()).toBeFalsy();
+        expect(proposal.applied.length).toBe(1);
+        expect(proposal.applied[0].type).toBe(PricingAccepted.Type);
     });
 
     test('Proposal::rejectPricing', () => {
@@ -46,7 +53,9 @@ describe('Proposal class', () => {
         
         expect(proposal.progress.hasPricingAccepted()).toBeFalsy();
         expect(proposal.progress.hasPricingRejected()).toBeTruthy();
-        expect(proposal.expectations.suggestedPrice).toBe(higherPrice);
+        expect(proposal.applied.length).toBe(1);
+        expect(proposal.applied[0].type).toBe(PricingRejected.Type);
+        expect(proposal.expectations.suggestedPrice).toBe(fairPrice);
     });
 
     test('Proposal::poolDoers', () => {
@@ -59,6 +68,8 @@ describe('Proposal class', () => {
 
         proposal.poolDoers(recommendedDoers);
 
+        expect(proposal.applied.length).toBe(1);
+        expect(proposal.applied[0].type).toBe(DoersPooled.Type);
         expect(proposal.progress.hasPooledDoers()).toBeTruthy();
         expect(proposal.candidateDoers.size()).toBe(3);
         expect(proposal.candidateDoers.contains(doer1)).toBeTruthy();
@@ -76,6 +87,16 @@ describe('Proposal class', () => {
         const proposal = Proposal.restoreStateWith(stream);
 
         proposal.mergeDoers(availableDoers);
+
+        expect(proposal.applied.length).toBe(1);
+        expect(proposal.applied[0].type).toBe(DoersMerged.Type);
+
+        const event = proposal.applied[0] as DoersMerged;
+
+        expect(event.doers.size()).toBe(2);
+        expect(event.doers.contains(doer1)).toBeTruthy();
+        expect(event.doers.contains(doer2)).toBeFalsy();
+        expect(event.doers.contains(doer3)).toBeTruthy();
 
         expect(proposal.progress.hasMergedDoers()).toBeTruthy();
         expect(proposal.candidateDoers.size()).toBe(2);
