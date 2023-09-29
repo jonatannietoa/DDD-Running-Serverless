@@ -5,4 +5,4 @@ For conference talks on the topic of DDD with Serverless/FaaS.
 
 https://stackoverflow.com/a/74890752
 
-git clone https://oauth2:<fine-grained-access-token>@github.com/VaughnVernon/DDD-Running-Serverless.git/
+git clone https://oauth2:`<`fine-grained-access-token`>`@github.com/VaughnVernon/DDD-Running-Serverless.git/
