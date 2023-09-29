@@ -105,7 +105,7 @@ export class Proposal extends EventSourcedEntity {
                 this.whenDoersMerged(e as DoersMerged);
                 break;
             default:
-                throw new Error("Unknow event type");
+                throw new Error("Unknown event type");
         }
     }
 
