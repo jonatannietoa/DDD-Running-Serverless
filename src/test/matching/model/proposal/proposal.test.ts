@@ -26,6 +26,9 @@ describe('Proposal class', () => {
         const proposal = Proposal.submitFor(client, expectations);
 
         expect(proposal).not.toBeNull();
+        expect(proposal.applied.length).toBe(1);
+        expect(proposal.applied[0].type).toBe(ProposalSubmitted.Type);
+        expect((proposal.applied[0] as ProposalSubmitted).client.id.value).toBe(client.id.value);
         expect(proposal.progress.isSubmitted()).toBeTruthy();
         expect(proposal.applied.length).toBe(1);
         expect(proposal.applied[0].type).toBe(ProposalSubmitted.Type);
@@ -38,6 +41,10 @@ describe('Proposal class', () => {
 
         proposal.acceptPricing();
 
+        expect(proposal.applied.length).toBe(1);
+        expect(proposal.applied[0].type).toBe(PricingAccepted.Type);
+        expect((proposal.applied[0] as PricingAccepted).proposalId.value).toBe(uniqueId.value);
+
         expect(proposal.progress.hasPricingAccepted()).toBeTruthy();
         expect(proposal.progress.hasPricingRejected()).toBeFalsy();
         expect(proposal.applied.length).toBe(1);
@@ -49,8 +56,13 @@ describe('Proposal class', () => {
 
         const proposal = Proposal.restoreStateWith(stream);
 
-        proposal.rejectPricing(higherPrice);
+        proposal.rejectPricing(fairPrice);
         
+        expect(proposal.applied.length).toBe(1);
+        expect(proposal.applied[0].type).toBe(PricingRejected.Type);
+        expect((proposal.applied[0] as PricingRejected).proposalId.value).toBe(uniqueId.value);
+        expect((proposal.applied[0] as PricingRejected).suggestedPricing).toBe(fairPrice);
+
         expect(proposal.progress.hasPricingAccepted()).toBeFalsy();
         expect(proposal.progress.hasPricingRejected()).toBeTruthy();
         expect(proposal.applied.length).toBe(1);
@@ -67,6 +79,13 @@ describe('Proposal class', () => {
         const proposal = Proposal.restoreStateWith(stream);
 
         proposal.poolDoers(recommendedDoers);
+
+        expect(proposal.applied.length).toBe(1);
+        expect(proposal.applied[0].type).toBe(DoersPooled.Type);
+        expect((proposal.applied[0] as DoersPooled).proposalId.value).toBe(uniqueId.value);
+        expect((proposal.applied[0] as DoersPooled).doers.contains(doer1)).toBeTruthy();
+        expect((proposal.applied[0] as DoersPooled).doers.contains(doer2)).toBeTruthy();
+        expect((proposal.applied[0] as DoersPooled).doers.contains(doer3)).toBeTruthy();
 
         expect(proposal.applied.length).toBe(1);
         expect(proposal.applied[0].type).toBe(DoersPooled.Type);
@@ -91,12 +110,10 @@ describe('Proposal class', () => {
         expect(proposal.applied.length).toBe(1);
         expect(proposal.applied[0].type).toBe(DoersMerged.Type);
 
-        const event = proposal.applied[0] as DoersMerged;
-
-        expect(event.doers.size()).toBe(2);
-        expect(event.doers.contains(doer1)).toBeTruthy();
-        expect(event.doers.contains(doer2)).toBeFalsy();
-        expect(event.doers.contains(doer3)).toBeTruthy();
+        expect((proposal.applied[0] as DoersMerged).doers.size()).toBe(2);
+        expect((proposal.applied[0] as DoersMerged).doers.contains(doer1)).toBeTruthy();
+        expect((proposal.applied[0] as DoersMerged).doers.contains(doer2)).toBeFalsy();
+        expect((proposal.applied[0] as DoersMerged).doers.contains(doer3)).toBeTruthy();
 
         expect(proposal.progress.hasMergedDoers()).toBeTruthy();
         expect(proposal.candidateDoers.size()).toBe(2);
