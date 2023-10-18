@@ -21,8 +21,8 @@ export class ProposalState {
       Client.none(),
       Expectations.none(),
       new OSet<Doer>(),
-      Doer.none(),
-      Progress.none()
+      Progress.none(),
+      Doer.none()
     )
   }
 
@@ -31,14 +31,13 @@ export class ProposalState {
     client: Client,
     expectations: Expectations
   ): ProposalState {
-    return
-    new ProposalState(
+    return new ProposalState(
       id,
       client,
       expectations,
       new OSet<Doer>(),
-      null,
-      Progress.submitted()
+      Progress.submitted(),
+      Doer.none()
     )
   }
 
@@ -47,14 +46,14 @@ export class ProposalState {
     client: Client,
     expectations: Expectations,
     candidateDoers: OSet<Doer>,
-    matchedDoer: Doer,
-    progress: Progress
+    progress: Progress,
+    matchedDoer?: Doer
   ) {
     this.id = id
     this.client = client
     this.expectations = expectations
     this.candidateDoers = candidateDoers
-    this.matchedDoer = matchedDoer
+    this.matchedDoer = matchedDoer ? matchedDoer : Doer.none()
     this.progress = progress
   }
 
@@ -77,8 +76,8 @@ export class ProposalState {
       this.client,
       this.expectations,
       this.candidateDoers,
-      this.matchedDoer,
-      this.progress.withPricingAccepted()
+      this.progress.withPricingAccepted(),
+      this.matchedDoer
     )
   }
 

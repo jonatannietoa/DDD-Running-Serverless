@@ -58,6 +58,10 @@ export class Progress {
     return this.steps.contains(Step.PricingRejected)
   }
 
+  hasAcceptedByDoer() {
+    return this.steps.contains(Step.AcceptedByClient)
+  }
+
   withPricingAccepted(): Progress {
     return new Progress(
       Step.PricingAccepted,
@@ -99,6 +103,10 @@ export class Progress {
 
   withMatched(): Progress {
     return new Progress(Step.Matched, this.steps)
+  }
+
+  withAcceptedByDoer(): Progress {
+    return new Progress(Step.AcceptedByClient, this.steps)
   }
 
   toString(): string {
@@ -150,4 +158,5 @@ enum Step {
   DoersUnavailable = 6,
   MatchPending = 7,
   Matched = 8,
+  AcceptedByClient = 9,
 }

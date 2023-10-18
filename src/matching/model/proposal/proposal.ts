@@ -9,6 +9,7 @@ import { Id } from '../Id'
 import { Set as OSet } from 'typescript-collections'
 import { ProposalState } from './ProposalState'
 import {
+  AcceptedBy,
   DoersMerged,
   DoersPooled,
   PricingAccepted,
@@ -57,6 +58,10 @@ export class Proposal extends EventSourcedEntity {
     }
   }
 
+  acceptBy(doer: Doer): void {
+    this.apply(AcceptedBy.with(this.state.id, doer))
+  }
+
   get candidateDoers() {
     return this.state.candidateDoers
   }
@@ -78,29 +83,26 @@ export class Proposal extends EventSourcedEntity {
   }
 
   protected when(e: DomainEvent): void {
-    switch (e.type) {
-      case ProposalSubmitted.Type:
-        this.whenProposalSubmitted(e as ProposalSubmitted)
-        break
-      case PricingAccepted.Type:
-        this.whenPricingAccepted(e as PricingAccepted)
-        break
-      case PricingRejected.Type:
-        this.whenPricingRejected(e as PricingRejected)
-        break
-      case DoersPooled.Type:
-        this.whenDoersPooled(e as DoersPooled)
-        break
-      case DoersMerged.Type:
-        this.whenDoersMerged(e as DoersMerged)
-        break
-      default:
-        throw new Error('Unknown event type')
+    if (e.type === ProposalSubmitted.Type) {
+      this.whenProposalSubmitted(e as ProposalSubmitted)
+    } else if (e.type === PricingAccepted.Type) {
+      this.whenPricingAccepted(e as PricingAccepted)
+    } else if (e.type === PricingRejected.Type) {
+      this.whenPricingRejected(e as PricingRejected)
+    } else if (e.type === DoersPooled.Type) {
+      this.whenDoersPooled(e as DoersPooled)
+    } else if (e.type === DoersMerged.Type) {
+      this.whenDoersMerged(e as DoersMerged)
+    } else if (e.type === AcceptedBy.Type) {
+      this.whenAcceptBy((e as AcceptedBy).doer)
+    } else {
+      throw new Error('Unknown event type')
     }
   }
 
   // INTERNAL USE ONLY
   static restoreStateWith(stream: Array<DomainEvent>): Proposal {
+    // @ts-ignore
     return new Proposal(null, null, stream)
   }
 
@@ -138,8 +140,8 @@ export class Proposal extends EventSourcedEntity {
       this.state.client,
       this.state.expectations.withSuggestedPrice(e.suggestedPricing),
       this.state.candidateDoers,
-      this.state.matchedDoer,
-      this.state.progress.withPricingRejected()
+      this.state.progress.withPricingRejected(),
+      this.state.matchedDoer
     )
   }
 
@@ -149,8 +151,8 @@ export class Proposal extends EventSourcedEntity {
       this.state.client,
       this.state.expectations,
       e.doers,
-      this.state.matchedDoer,
-      this.state.progress.withPooledDoers()
+      this.state.progress.withPooledDoers(),
+      this.state.matchedDoer
     )
   }
 
@@ -160,8 +162,19 @@ export class Proposal extends EventSourcedEntity {
       this.state.client,
       this.state.expectations,
       this.state.mergeDoers(e.doers),
-      this.state.matchedDoer,
-      this.state.progress.withMergedDoers().withMatchPending()
+      this.state.progress.withMergedDoers().withMatchPending(),
+      this.state.matchedDoer
+    )
+  }
+
+  private whenAcceptBy(doer: Doer): void {
+    this.state = new ProposalState(
+      this.state.id,
+      this.state.client,
+      this.state.expectations,
+      this.state.candidateDoers,
+      this.state.progress.withMatched().withAcceptedByDoer(),
+      doer
     )
   }
 }

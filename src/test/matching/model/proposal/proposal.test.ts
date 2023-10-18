@@ -1,6 +1,7 @@
 // Copyright © 2012-2023 Vaughn Vernon. All rights reserved.
 
 import {
+  AcceptedBy,
   DoersMerged,
   DoersPooled,
   PricingAccepted,
@@ -143,5 +144,23 @@ describe('Proposal class', () => {
     expect(proposal.candidateDoers.contains(doer1)).toBeTruthy()
     expect(proposal.candidateDoers.contains(doer2)).toBeFalsy()
     expect(proposal.candidateDoers.contains(doer3)).toBeTruthy()
+  })
+
+  test('Proposal::acceptBy', () => {
+    const stream = [
+      ProposalSubmitted.with(uniqueId, client, expectations),
+      PricingAccepted.with(uniqueId),
+      DoersPooled.with(uniqueId, recommendedDoers),
+      DoersMerged.with(uniqueId, availableDoers),
+    ]
+
+    const proposal = Proposal.restoreStateWith(stream)
+
+    proposal.acceptBy(doer1)
+
+    expect(proposal.applied.length).toBe(1)
+    expect(proposal.applied[0].type).toBe(AcceptedBy.Type)
+
+    expect(proposal.progress.hasAcceptedByDoer()).toBeTruthy()
   })
 })

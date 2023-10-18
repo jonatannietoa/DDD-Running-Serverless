@@ -122,3 +122,21 @@ export class DoersMerged extends DomainEvent {
     this.doers.union(doers)
   }
 }
+
+export class AcceptedBy extends DomainEvent {
+  static readonly Type = 'AcceptedBy'
+
+  readonly proposalId: Id
+  readonly doer: Doer
+
+  static with(proposalId: Id, doer: Doer): AcceptedBy {
+    return new AcceptedBy(proposalId, doer)
+  }
+
+  constructor(proposalId: Id, doer: Doer) {
+    super(AcceptedBy.Type, proposalId.value)
+
+    this.proposalId = proposalId
+    this.doer = doer
+  }
+}
