@@ -1,25 +1,36 @@
 {
+  "$schema": "https://json.schemastore.org/tsconfig",
+
+  "src": ["src/**/*.ts, src/**/*.tsx", "src/**/test/*"],
+  "exclude": ["infrastructure", "node_modules"],
+
   "compilerOptions": {
+    "outDir": "dist/esm",
+    "lib": ["es2022", "DOM"],
+    "module": "ES2020",
+    "moduleResolution": "Node",
+    "target": "es2022",
+    "declaration": false,
+    "strict": true,
     "esModuleInterop": true,
-
-    "verbatimModuleSyntax": false,
-
-    "lib": ["es2020"],
-
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+    "resolveJsonModule": true,
+    "allowSyntheticDefaultImports": true,
     "sourceMap": true,
+    "downlevelIteration": true,
+    "jsx": "react-jsx",
+    "experimentalDecorators": true,
+    "emitDecoratorMetadata": true,
+    "strictPropertyInitialization": false,
+    "noFallthroughCasesInSwitch": true,
+    "noImplicitReturns": true
+  },
 
-    "baseUrl": ".",
-
-    "paths": {
-      "$common": [
-        "src/common"
-      ],
-      "$matching": [
-        "src/matching"
-      ],
-      "$pricing/*": [
-        "src/pricing"
-      ],
-    }
+  "ts-node": {
+    "compilerOptions": {
+      "module": "commonjs"
+    },
+    "files": true
   }
 }
